@@ -1,18 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function App() {
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [applied, setApplied] = useState(false);
-  const [jobs, setJobs] = useState<any[]>([]);
+
+  const [jobs, setJobs] = useState<any[]>(() => {
+  const savedJobs = localStorage.getItem("jobs");
+  return savedJobs ? JSON.parse(savedJobs) : [];
+});
+
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("jobs", JSON.stringify(jobs));
+  }, [jobs]);
 
   const handleAddJob = () => {
     if (!title || !company) return;
 
-    const newJob = { title, company, applied };
-    setJobs([...jobs, newJob]);
+    if (editIndex !== null) {
+      const updatedJobs = [...jobs];
+      updatedJobs[editIndex] = { title, company, applied };
+      setJobs(updatedJobs);
+      setEditIndex(null);
+    } else {
+      const newJob = { title, company, applied };
+      setJobs([...jobs, newJob]);
+    }
 
-    // Clear inputs
     setTitle("");
     setCompany("");
     setApplied(false);
@@ -47,24 +63,40 @@ function App() {
 
       <br /><br />
 
-      <button onClick={handleAddJob}>Add Job</button>
+      <button onClick={handleAddJob}>
+        {editIndex !== null ? "Update Job" : "Add Job"}
+      </button>
 
       <h2>Jobs List</h2>
 
       <ul>
-  {jobs.map((job, index) => (
-    <li key={index}>
-      {job.title} - {job.company} ({job.applied ? "Applied" : "Not Applied"})
-      
-      <button onClick={() => {
-        const updatedJobs = jobs.filter((_, i) => i !== index);
-        setJobs(updatedJobs);
-      }}>
-        Delete
-      </button>
-    </li>
-  ))}
-</ul>
+        {jobs.map((job, index) => (
+          <li key={index}>
+            {job.title} - {job.company} (
+            {job.applied ? "Applied" : "Not Applied"})
+
+            <button
+              onClick={() => {
+                setTitle(job.title);
+                setCompany(job.company);
+                setApplied(job.applied);
+                setEditIndex(index);
+              }}
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() => {
+                const updatedJobs = jobs.filter((_, i) => i !== index);
+                setJobs(updatedJobs);
+              }}
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
